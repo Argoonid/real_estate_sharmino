@@ -5,7 +5,12 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
+  // Для GitHub Pages используем имя репозитория, для локального сервера — корень '/'
+  const repoName = 'sharmino-real-estate';
+  const base = process.env.GITHUB_ACTIONS ? `/${repoName}/` : '/';
+
   return {
+    base,
     plugins: [
       react(),
       tailwindcss(),
@@ -13,31 +18,31 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
-          id: '/',
-          name: 'sharmino real estate',
+          id: base,
+          name: 'Sharmino Real Estate',
           short_name: 'Sharmino',
           description: 'Недвижимость в Шарм-эль-Шейхе: аренда, продажа и интерактивная карта объектов.',
           theme_color: '#0ea5e9',
           background_color: '#ffffff',
           display: 'standalone',
           display_override: ['standalone', 'minimal-ui', 'browser'],
-          start_url: '/',
-          scope: '/',
+          start_url: base,
+          scope: base,
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: 'pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: 'pwa-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
@@ -46,7 +51,7 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          navigateFallback: '/index.html',
+          // Не хардкодим navigateFallback: VitePWA сам свяжет fallback с динамическим base
         },
         devOptions: {
           enabled: false,
@@ -56,7 +61,7 @@ export default defineConfig(() => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(import.meta.dirname, '.'),
+        '@': path.resolve(import.meta.dirname, './src'),
       },
     },
     server: {
