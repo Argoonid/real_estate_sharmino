@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0369a1" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="sea" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2dd4bf" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle with safe padding -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+
+  <!-- Background subtle sun glow -->
+  <circle cx="256" cy="190" r="110" fill="#fef08a" opacity="0.12" />
+
+  <!-- Architectural Buildings (Luxury Villa & Residence) -->
+  <g filter="url(#shadow)">
+    <!-- Tall modern tower silhouette -->
+    <path d="M190 330 L190 180 L250 140 L310 180 L310 330 Z" fill="#ffffff" opacity="0.95" />
+    <path d="M250 140 L310 180 L310 330 L250 330 Z" fill="#cbd5e1" opacity="0.9" />
+
+    <!-- Left villa wing -->
+    <path d="M130 330 L130 220 L190 180 L190 330 Z" fill="#e2e8f0" />
+    <!-- Right modern wing -->
+    <path d="M310 200 L370 240 L370 330 L310 330 Z" fill="#94a3b8" />
+
+    <!-- Golden penthouse apex / spire -->
+    <polygon points="250,110 238,140 262,140" fill="url(#gold)" />
+
+    <!-- Modern architectural windows -->
+    <rect x="210" y="200" width="20" height="24" rx="2" fill="#0284c7" />
+    <rect x="240" y="200" width="20" height="24" rx="2" fill="#0284c7" />
+    <rect x="270" y="200" width="20" height="24" rx="2" fill="#0284c7" />
+
+    <rect x="210" y="240" width="20" height="24" rx="2" fill="#0284c7" />
+    <rect x="240" y="240" width="20" height="24" rx="2" fill="#0284c7" />
+    <rect x="270" y="240" width="20" height="24" rx="2" fill="#0284c7" />
+
+    <rect x="225" y="280" width="50" height="50" rx="3" fill="#0f172a" />
+    <rect x="235" y="290" width="30" height="40" rx="2" fill="url(#gold)" />
+
+    <!-- Palm Tree silhouette on left -->
+    <path d="M150 330 Q145 280 160 250" stroke="#16a34a" stroke-width="6" stroke-linecap="round" fill="none" />
+    <!-- Palm fronds -->
+    <path d="M160 250 Q130 230 115 250" stroke="#22c55e" stroke-width="4" stroke-linecap="round" fill="none" />
+    <path d="M160 250 Q140 215 155 210" stroke="#22c55e" stroke-width="4" stroke-linecap="round" fill="none" />
+    <path d="M160 250 Q180 220 195 240" stroke="#22c55e" stroke-width="4" stroke-linecap="round" fill="none" />
+  </g>
+
+  <!-- Red Sea Turquoise Waves at bottom -->
+  <path d="M0 380 C120 350, 180 395, 270 375 C360 355, 420 385, 512 370 L512 512 L0 512 Z" fill="url(#sea)" opacity="0.4" />
+  <path d="M0 405 C140 380, 200 420, 290 400 C380 380, 440 410, 512 395 L512 512 L0 512 Z" fill="url(#sea)" opacity="0.75" />
+  <path d="M0 435 C150 415, 240 445, 330 425 C420 405, 470 430, 512 420 L512 512 L0 512 Z" fill="#0284c7" />
+
+  <!-- Brand Typography -->
+  <text x="256" y="475" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="900" fill="#ffffff" letter-spacing="4" text-anchor="middle">SHARMINO</text>
+  <text x="256" y="495" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#93c5fd" letter-spacing="6" text-anchor="middle">REAL ESTATE • SHARM</text>
+</svg>
