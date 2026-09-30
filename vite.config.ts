@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   // Для GitHub Pages используем имя репозитория, для локального сервера — корень '/'
-  const repoName = 'sharmino-real-estate';
+  const repoName = 'real_estate_sharmino';
   const base = process.env.GITHUB_ACTIONS ? `/${repoName}/` : '/';
 
   return {
