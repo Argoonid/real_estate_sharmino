@@ -6,15 +6,20 @@ export { formatPrice, getBasePriceUSD };
 export type { LeadRow };
 
 export async function dispatchBookingLead(booking: BookingRequest): Promise<void> {
+  const preferredTag = booking.preferredContact
+    ? `[Связь: ${booking.preferredContact.toUpperCase()}]`
+    : '';
+  const leadNotes = [preferredTag, booking.notes?.trim()].filter(Boolean).join('\n');
+
   const lead: LeadInsert = {
     property_id: booking.propertyId || null,
     client_name: booking.clientName.trim(),
     client_phone: booking.clientPhone.trim(),
-    client_telegram: booking.clientTelegram.trim() || null,
+    client_telegram: booking.clientTelegram?.trim() || booking.preferredContact || null,
     viewing_date: booking.viewingDate,
     viewing_time: booking.viewingTime,
     viewing_type: booking.viewingType,
-    notes: booking.notes?.trim() || null,
+    notes: leadNotes || null,
     status: 'pending',
   };
 

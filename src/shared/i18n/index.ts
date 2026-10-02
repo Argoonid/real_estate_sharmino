@@ -105,6 +105,12 @@ export interface Translations {
   sentToTelegram: string;
   whatsappDirect: string;
   close: string;
+  preferredContact: string;
+  contactMethodWhatsApp: string;
+  contactMethodTelegram: string;
+  contactMethodPhone: string;
+  phoneValidationError: string;
+  nameValidationError: string;
 
   // Cookie & Telemetry
   cookieTitle: string;
@@ -344,10 +350,72 @@ export interface Translations {
   recentPropertiesHeading: string;
   recentPropertiesDescription: string;
   emptyRecentProperties: string;
+  // Home Page
+  homeHeroBadge: string;
+  homeHeroTitle: string;
+  homeHeroSubtitle: string;
+  homeFindButton: string;
+  homeDistrictsTitle: string;
+  homeDistrictsSubtitle: string;
+  homeDistrictsExplore: string;
+  homeTrustTitle: string;
+  homeTrustSubtitle: string;
+  homeTrust1Title: string;
+  homeTrust1Desc: string;
+  homeTrust2Title: string;
+  homeTrust2Desc: string;
+  homeTrust3Title: string;
+  homeTrust3Desc: string;
+  homeTrust4Title: string;
+  homeTrust4Desc: string;
+  homeRecentTitle: string;
+  homeRecentSubtitle: string;
+  homeViewAll: string;
+  homeConciergeTitle: string;
+  homeConciergeSubtitle: string;
+  homeConciergeAction: string;
+  homeDistrictHadabaDesc: string;
+  homeDistrictNaamaDesc: string;
+  homeDistrictNabqDesc: string;
+  homeDistrictMontazahDesc: string;
+  homeDistrictDeltaDesc: string;
+  homeDistrictHadabaTag: string;
+  homeDistrictNaamaTag: string;
+  homeDistrictNabqTag: string;
+  homeDistrictMontazahTag: string;
+  homeDistrictDeltaTag: string;
 }
 
 export const translations: Record<Language, Translations> = {
   ru: {
+    homeHeroBadge: 'Недвижимость на Красном море',
+    homeHeroTitle: 'Найдите свой дом в Шарм-эль-Шейхе',
+    homeHeroSubtitle: 'Прямые объявления от собственников и проверенных застройщиков без скрытых комиссий.',
+    homeFindButton: 'Найти предложения',
+    homeDistrictsTitle: 'Районы побережья',
+    homeDistrictsSubtitle: 'Выберите район под свой образ жизни — от шумных бухт до уединённых закрытых вилл.',
+    homeDistrictsExplore: 'Смотреть объекты',
+    homeTrustTitle: 'Прозрачность и безопасность',
+    homeTrustSubtitle: 'Мы убрали хаос и непрозрачность египетского рынка, оставив только чистые юридические факты.',
+    homeTrust1Title: 'Юридический аудит',
+    homeTrust1Desc: 'Проверка истории владения, отсутствия долгов по сервисному сбору и оформление в суде.',
+    homeTrust2Title: '0% комиссии покупателю',
+    homeTrust2Desc: 'Честная модель расчётов: услуги подбора и оформления оплачиваются продавцом.',
+    homeTrust3Title: 'Валютная фиксация',
+    homeTrust3Desc: 'Прозрачные расчёты в твердой валюте (USD/EUR) без потерь на скачках курса.',
+    homeTrust4Title: 'Дистанционные сделки',
+    homeTrust4Desc: 'Видео-туры в реальном времени, проверка доверенностей (Таукиль) и удалённое бронирование.',
+    homeRecentTitle: 'Свежие предложения',
+    homeRecentSubtitle: 'Объекты, недавно прошедшие верификацию и добавленные в базу.',
+    homeViewAll: 'Открыть весь каталог',
+    homeConciergeTitle: 'Не нашли подходящий вариант?',
+    homeConciergeSubtitle: 'Оставьте запрос — мы подберём проверенные объекты под ваш бюджет и организуем просмотр.',
+    homeConciergeAction: 'Запросить подбор',
+    homeDistrictHadabaDesc: 'Коралловые рифы у берега, развитая городская среда и тихие бухты без зимнего ветра.',
+    homeDistrictNaamaDesc: 'Сердце Шарма: песчаные пляжи, променад, ночная жизнь и высокая арендная доходность.',
+    homeDistrictNabqDesc: 'Просторная береговая линия, кайтсерфинг, новые компаунды и пологий вход в воду.',
+    homeDistrictMontazahDesc: 'Престижный приватный сектор: элитные виллы и панорамный вид на остров Тиран.',
+    homeDistrictDeltaDesc: 'Зелёный курортный оазис с полной внутренней инфраструктурой и круглогодичным спросом.',
     appName: 'sharmino',
     tagline: 'Недвижимость в Шарм-эль-Шейхе для покупателей и арендаторов',
     brandSubtitle: 'Недвижимость в Шарме',
@@ -361,6 +429,11 @@ export const translations: Record<Language, Translations> = {
     navFavorites: 'Избранное',
     navCompare: 'Сравнение',
     navAlerts: 'Уведомления',
+    homeDistrictHadabaTag: 'Рифы и жизнь',
+    homeDistrictNaamaTag: 'Пляжи и променад',
+    homeDistrictNabqTag: 'Кайт и простор',
+    homeDistrictMontazahTag: 'Виллы и Тиран',
+    homeDistrictDeltaTag: 'Зелёный оазис',
 
     viewSplit: 'Карта + Каталог',
     viewGrid: 'Плитка',
@@ -371,7 +444,7 @@ export const translations: Record<Language, Translations> = {
     dealRentDaily: 'Посуточно',
     dealAll: 'Все предложения',
 
-    searchPlaceholder: 'Поиск по району, компаунду (Domina, Golf Heights, Sunny Lakes, Delta)...',
+    searchPlaceholder: 'Поиск по району, названию...',
     allDistricts: 'Все районы Шарма',
     bedrooms: 'Спальни',
     bedroomsAll: 'Все',
@@ -437,12 +510,19 @@ export const translations: Record<Language, Translations> = {
     phoneWhatsapp: 'Телефон / WhatsApp',
     telegramUsername: 'Telegram (@никнейм)',
     notesLabel: 'Пожелания / Вопросы (опционально)',
-    notesPlaceholder: 'Время приезда, трансфер, вопросы по договору...',
+    notesPlaceholder: 'Удобное время для связи, вопросы по объекту...',
     submitBooking: 'Отправить заявку на просмотр',
     bookingSuccessTitle: 'Заявка успешно отправлена!',
     bookingSuccessDesc: 'Заявка сохранена в базе данных. Команда свяжется с вами по указанному телефону.',
     sentToTelegram: 'Заявка сохранена в базе',
     whatsappDirect: 'Написать в WhatsApp прямо сейчас',
+    preferredContact: 'Предпочтительный способ связи',
+    contactMethodWhatsApp: 'WhatsApp',
+    contactMethodTelegram: 'Telegram',
+    contactMethodPhone: 'Звонок',
+    phoneValidationError: 'Пожалуйста, укажите корректный номер телефона',
+    nameValidationError: 'Пожалуйста, укажите ваше имя',
+    
 
     cookieTitle: 'Конфиденциальность и данные',
     cookieDesc: 'Язык, валюта и избранное сохраняются в этом браузере. Контактные данные и текст заявки отправляются в Supabase. Статистика посещений и устройства включается только после согласия, если владелец сайта настроил Google Analytics.',
@@ -694,6 +774,34 @@ export const translations: Record<Language, Translations> = {
   },
 
   en: {
+    homeHeroBadge: 'Red Sea Real Estate',
+    homeHeroTitle: 'Find your home in Sharm El Sheikh',
+    homeHeroSubtitle: 'Direct listings from owners and verified developers with zero hidden fees.',
+    homeFindButton: 'Search listings',
+    homeDistrictsTitle: 'Coastal Districts',
+    homeDistrictsSubtitle: 'Choose a location for your lifestyle — from vibrant bays to secluded private villas.',
+    homeDistrictsExplore: 'View properties',
+    homeTrustTitle: 'Transparency & Security',
+    homeTrustSubtitle: 'We eliminated the ambiguity of the local market, providing verified legal facts and safe transactions.',
+    homeTrust1Title: 'Legal Audit',
+    homeTrust1Desc: 'Title deed verification, service fee debt checks, and court registration support.',
+    homeTrust2Title: '0% Buyer Commission',
+    homeTrust2Desc: 'Transparent business model: our services are covered by the seller or developer.',
+    homeTrust3Title: 'Currency Security',
+    homeTrust3Desc: 'Fixed pricing and payments in stable currencies (USD/EUR) with live exchange rates.',
+    homeTrust4Title: 'Remote Purchases',
+    homeTrust4Desc: 'Live video walkthroughs, power of attorney (Tawkeel) checks, and secure deposits.',
+    homeRecentTitle: 'New Listings',
+    homeRecentSubtitle: 'Recently verified properties added to the database.',
+    homeViewAll: 'Browse full catalog',
+    homeConciergeTitle: 'Haven’t found what you need?',
+    homeConciergeSubtitle: 'Submit your criteria — our team will shortlist verified options and arrange viewings.',
+    homeConciergeAction: 'Request personalized search',
+    homeDistrictHadabaDesc: 'Vibrant house reefs, mature city infrastructure, and bays sheltered from winter winds.',
+    homeDistrictNaamaDesc: 'The epicenter of Sharm: sandy beaches, promenade, nightlife, and strong rental yields.',
+    homeDistrictNabqDesc: 'Expansive beaches, kitesurfing spots, modern compounds, and shallow lagoons.',
+    homeDistrictMontazahDesc: 'Exclusive residential area: private luxury villas and panoramic views of Tiran Island.',
+    homeDistrictDeltaDesc: 'Lush resort oasis with full self-contained amenities and steady year-round rental demand.',
     appName: 'sharmino',
     tagline: 'Sharm El Sheikh Real Estate for Buyers and Tenants',
     brandSubtitle: 'Sharm real estate',
@@ -707,6 +815,11 @@ export const translations: Record<Language, Translations> = {
     navFavorites: 'Favorites',
     navCompare: 'Compare',
     navAlerts: 'Alerts',
+    homeDistrictHadabaTag: 'Reefs & City',
+    homeDistrictNaamaTag: 'Beaches & Nightlife',
+    homeDistrictNabqTag: 'Kite & Open Coast',
+    homeDistrictMontazahTag: 'Villas & Tiran View',
+    homeDistrictDeltaTag: 'Green Oasis',
 
     viewSplit: 'Map + Catalog',
     viewGrid: 'Grid',
@@ -717,7 +830,7 @@ export const translations: Record<Language, Translations> = {
     dealRentDaily: 'Holiday',
     dealAll: 'All Deals',
 
-    searchPlaceholder: 'Search by district, compound (Domina, Golf Heights, Sunny Lakes, Delta)...',
+    searchPlaceholder: 'Search by district, title...',
     allDistricts: 'All Districts',
     bedrooms: 'Bedrooms',
     bedroomsAll: 'All',
@@ -783,19 +896,25 @@ export const translations: Record<Language, Translations> = {
     phoneWhatsapp: 'Phone / WhatsApp',
     telegramUsername: 'Telegram username',
     notesLabel: 'Notes or Requests (optional)',
-    notesPlaceholder: 'Arrival date, airport pickup, lease duration...',
+    notesPlaceholder: 'Best time to contact, questions about the property...',
     submitBooking: 'Send Viewing Request',
     bookingSuccessTitle: 'Request Sent Successfully!',
     bookingSuccessDesc: 'Your request has been saved. The team will contact you using the phone number provided.',
     sentToTelegram: 'Request saved to database',
     whatsappDirect: 'Chat on WhatsApp Now',
-
     cookieTitle: 'Privacy and data',
     cookieDesc: 'Language, currency and favorites are stored in this browser. Contact details and request text are sent to Supabase. Visitor and device statistics are enabled only after consent, if the site owner configures Google Analytics.',
     cookieAcceptAll: 'Allow analytics',
     cookieNecessaryOnly: 'Necessary only',
     cookieNoAnalytics: 'Visitor analytics is not currently configured. The site stores preferences and favorites in this browser and sends inquiry data to Supabase.',
     privacySettings: 'Privacy settings',
+    preferredContact: 'Preferred contact method',
+    contactMethodWhatsApp: 'WhatsApp',
+    contactMethodTelegram: 'Telegram',
+    contactMethodPhone: 'Phone call',
+    phoneValidationError: 'Please enter a valid phone number',
+    nameValidationError: 'Please enter your name',
+  
 
     adminTitle: 'Database Property Management',
     adminSubtitle: 'Manage properties, check images and review customer inquiries',
@@ -1030,6 +1149,34 @@ export const translations: Record<Language, Translations> = {
   },
 
   it: {
+    homeHeroBadge: 'Immobiliare Mar Rosso',
+    homeHeroTitle: 'Trova la tua casa a Sharm El Sheikh',
+    homeHeroSubtitle: 'Annunci diretti da proprietari e costruttori verificati, senza commissioni nascoste.',
+    homeFindButton: 'Cerca immobili',
+    homeDistrictsTitle: 'Quartieri costieri',
+    homeDistrictsSubtitle: 'Scegli la zona perfetta per il tuo stile di vita — dalle baie vivaci alle ville private.',
+    homeDistrictsExplore: 'Vedi immobili',
+    homeTrustTitle: 'Trasparenza e Sicurezza',
+    homeTrustSubtitle: 'Abbiamo eliminato l’incertezza del mercato locale, offrendo verifiche legali e transazioni sicure.',
+    homeTrust1Title: 'Audit Legale',
+    homeTrust1Desc: 'Verifica dei titoli di proprietà, assenza di debiti condominiali e registrazione in tribunale.',
+    homeTrust2Title: '0% Commissione acquirente',
+    homeTrust2Desc: 'Modello chiaro: i servizi di consulenza e compravendita sono a carico del venditore.',
+    homeTrust3Title: 'Prezzi in Valuta Forte',
+    homeTrust3Desc: 'Trasparenza con prezzi fissati in valuta stabile (USD/EUR) e tassi di cambio aggiornati.',
+    homeTrust4Title: 'Compravendita a distanza',
+    homeTrust4Desc: 'Video tour in diretta, verifica delle procure (Tawkeel) e prenotazione online sicura.',
+    homeRecentTitle: 'Nuovi Annunci',
+    homeRecentSubtitle: 'Immobili verificati di recente aggiunti al database.',
+    homeViewAll: 'Apri catalogo completo',
+    homeConciergeTitle: 'Non hai trovato l’immobile giusto?',
+    homeConciergeSubtitle: 'Invia le tue preferenze — selezioneremo opzioni verificate e organizzeremo le visite.',
+    homeConciergeAction: 'Richiedi ricerca personalizzata',
+    homeDistrictHadabaDesc: 'Barriera corallina sotto casa, servizi completi e baie riparate dai venti invernali.',
+    homeDistrictNaamaDesc: 'Il centro di Sharm: spiagge sabbiose, passeggiata, locali e alta redditività da affitto.',
+    homeDistrictNabqDesc: 'Litorale spazioso, kitesurf, complessi residenziali moderni e fondale digradante.',
+    homeDistrictMontazahDesc: 'Area residenziale esclusiva: ville di pregio e vista aperta sull’isola di Tiran.',
+    homeDistrictDeltaDesc: 'Oasi verde con piscina, negozi, ristoranti e richiesta costante di affitto tutto l’anno.',
     appName: 'sharmino',
     tagline: 'Immobiliare a Sharm El Sheikh per acquirenti e inquilini',
     brandSubtitle: 'Immobili a Sharm',
@@ -1043,6 +1190,11 @@ export const translations: Record<Language, Translations> = {
     navFavorites: 'Preferiti',
     navCompare: 'Confronta',
     navAlerts: 'Notifiche',
+    homeDistrictHadabaTag: 'Barriera corallina',
+    homeDistrictNaamaTag: 'Spiagge e locali',
+    homeDistrictNabqTag: 'Kitesurf e relax',
+    homeDistrictMontazahTag: 'Ville e vista Tiran',
+    homeDistrictDeltaTag: 'Oasi verde',
 
     viewSplit: 'Mappa + Catalogo',
     viewGrid: 'Griglia',
@@ -1053,7 +1205,7 @@ export const translations: Record<Language, Translations> = {
     dealRentDaily: 'Vacanze',
     dealAll: 'Tutti',
 
-    searchPlaceholder: 'Cerca per quartiere, residence (Domina, Golf Heights, Sunny Lakes, Delta)...',
+    searchPlaceholder: 'Cerca per quartiere, titolo...',
     allDistricts: 'Tutti i quartieri',
     bedrooms: 'Camere',
     bedroomsAll: 'Tutte',
@@ -1119,12 +1271,18 @@ export const translations: Record<Language, Translations> = {
     phoneWhatsapp: 'Telefono / WhatsApp',
     telegramUsername: 'Telegram username',
     notesLabel: 'Note o richieste (facoltativo)',
-    notesPlaceholder: 'Data arrivo, navetta, durata locazione...',
+    notesPlaceholder: 'Orario preferito per il contatto...',
     submitBooking: 'Invia richiesta visita',
     bookingSuccessTitle: 'Richiesta inviata con successo!',
     bookingSuccessDesc: 'La richiesta è stata salvata. Il team ti contatterà al numero indicato.',
     sentToTelegram: 'Richiesta salvata nel database',
     whatsappDirect: 'Scrivi su WhatsApp ora',
+    preferredContact: 'Metodo di contatto preferito',
+    contactMethodWhatsApp: 'WhatsApp',
+    contactMethodTelegram: 'Telegram',
+    contactMethodPhone: 'Chiamata',
+    phoneValidationError: 'Inserisci un numero di telefono valido',
+    nameValidationError: 'Inserisci il tuo nome', 
 
     cookieTitle: 'Privacy e dati',
     cookieDesc: 'Lingua, valuta e preferiti sono salvati in questo browser. I recapiti e il testo della richiesta vengono inviati a Supabase. Le statistiche su visite e dispositivi vengono attivate solo con il consenso, se il proprietario configura Google Analytics.',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Currency, PageId } from '../../shared/types';
 import { Language, translations } from '../../shared/i18n';
 import {
@@ -8,13 +8,10 @@ import {
   Map,
   Grid,
   Split,
-  Menu,
-  X,
   Share2,
   Flame,
   ChevronDown,
   Sliders,
-  Send,
 } from 'lucide-react';
 import { useUIStore } from '../../app/model/uiStore';
 import { useFilterStore } from '../../features/filter-properties/model/filtersStore';
@@ -69,6 +66,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const setStoreCurrency = useFilterStore((s) => s.setCurrency);
   const storeViewMode = useFilterStore((s) => s.viewMode);
   const setStoreViewMode = useFilterStore((s) => s.setViewMode);
+  const filterDeal = useFilterStore((s) => s.filter.deal);
+  const setFilter = useFilterStore((s) => s.setFilter);
 
   const favorites = useAnonymousProfileStore((s) => s.favorites);
   const compareIds = useAnonymousProfileStore((s) => s.compareIds);
@@ -88,23 +87,50 @@ export const Navbar: React.FC<NavbarProps> = ({
   const onOpenSavedManager = propOnOpenSavedManager || (() => setShareProfileOpen(true));
   const onOpenSettings = propOnOpenSettings || (() => setSettingsOpen(true));
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currDropdownOpen, setCurrDropdownOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [rentDropdownOpen, setRentDropdownOpen] = useState(false);
 
+  const rentDropdownRef = useRef<HTMLDivElement>(null);
   const t = translations[language];
+
+  // Закрытие выпадающего меню аренды при клике снаружи
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (rentDropdownRef.current && !rentDropdownRef.current.contains(e.target as Node)) {
+        setRentDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const currencies: Currency[] = ['USD', 'EUR', 'GBP', 'EGP', 'RUB'];
   const languages: { code: Language; label: string; flag: string }[] = [
     { code: 'ru', label: 'RU', flag: '🇷🇺' },
-    { code: 'en', label: 'EN', flag: '🇬🇧' },
+    { code: 'en', label: 'EN', flag: 'EN' },
     { code: 'it', label: 'IT', flag: '🇮🇹' },
   ];
 
-  const handleMobileNav = (page: PageId) => {
-    onNavigate(page);
-    setMobileMenuOpen(false);
+  const handleNavCatalog = () => {
+    setFilter((prev) => ({ ...prev, deal: 'all' }));
+    onNavigate('catalog');
   };
+
+  const handleNavBuy = () => {
+    setFilter((prev) => ({ ...prev, deal: 'sale' }));
+    onNavigate('catalog');
+  };
+
+  const handleNavRent = (dealType: 'long_term_rent' | 'daily_rent') => {
+    setFilter((prev) => ({ ...prev, deal: dealType }));
+    onNavigate('catalog');
+    setRentDropdownOpen(false);
+  };
+
+  const isBuyActive = currentPage === 'catalog' && filterDeal === 'sale';
+  const isRentActive = currentPage === 'catalog' && (filterDeal === 'long_term_rent' || filterDeal === 'daily_rent');
+  const isCatalogAllActive = currentPage === 'catalog' && filterDeal === 'all';
 
   return (
     <header className="hidden lg:block sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md text-white border-b border-slate-800/80 transition-colors">
@@ -113,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-7">
           <div
             className="flex items-center gap-2.5 cursor-pointer group select-none"
-            onClick={() => onNavigate('catalog')}
+            onClick={handleNavCatalog}
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-500 flex items-center justify-center shadow-md shadow-sky-900/30 group-hover:scale-105 transition-transform duration-300">
               <Building2 className="w-4 h-4 text-white" />
@@ -133,38 +159,77 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Clean Desktop Navigation */}
+          {/* Clean Desktop Navigation with Direct Deal Routing */}
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold text-slate-300">
+            {/* Каталог (Все) */}
             <button
-              onClick={() => onNavigate('catalog')}
+              onClick={handleNavCatalog}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                currentPage === 'catalog'
+                isCatalogAllActive
                   ? 'bg-slate-800 text-white font-bold border border-slate-700/80 shadow-xs'
                   : 'hover:text-white hover:bg-slate-800/50'
               }`}
             >
               {t.navCatalog}
             </button>
+
+            {/* Купить (Сразу в каталог со сделкой 'sale') */}
             <button
-              onClick={() => onNavigate('sale')}
+              onClick={handleNavBuy}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                currentPage === 'sale'
-                  ? 'bg-slate-800 text-white font-bold border border-slate-700/80 shadow-xs'
+                isBuyActive
+                  ? 'bg-sky-600 text-white font-bold shadow-xs'
                   : 'hover:text-white hover:bg-slate-800/50'
               }`}
             >
               {t.navBuy}
             </button>
-            <button
-              onClick={() => onNavigate('rent')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                currentPage === 'rent'
-                  ? 'bg-slate-800 text-white font-bold border border-slate-700/80 shadow-xs'
-                  : 'hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              {t.navRent}
-            </button>
+
+            {/* Аренда с дропдауном: Долгосрочная и Посуточная */}
+            <div className="relative" ref={rentDropdownRef}>
+              <button
+                onClick={() => setRentDropdownOpen((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isRentActive
+                    ? 'bg-sky-600 text-white font-bold shadow-xs'
+                    : 'hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <span>{t.navRent}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    rentDropdownOpen ? 'rotate-180 text-sky-300' : 'text-slate-400'
+                  }`}
+                />
+              </button>
+
+              {rentDropdownOpen && (
+                <div className="absolute left-0 mt-1.5 w-52 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() => handleNavRent('long_term_rent')}
+                    className={`w-full text-left px-3.5 py-2 text-xs transition flex items-center justify-between cursor-pointer ${
+                      currentPage === 'catalog' && filterDeal === 'long_term_rent'
+                        ? 'bg-sky-600/30 text-sky-400 font-bold'
+                        : 'hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span>{t.rentLongTerm}</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavRent('daily_rent')}
+                    className={`w-full text-left px-3.5 py-2 text-xs transition flex items-center justify-between cursor-pointer ${
+                      currentPage === 'catalog' && filterDeal === 'daily_rent'
+                        ? 'bg-sky-600/30 text-sky-400 font-bold'
+                        : 'hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span>{t.rentDaily}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Новые */}
             <button
               onClick={() => onNavigate('popular')}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -176,6 +241,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Flame className="w-3.5 h-3.5 fill-current text-amber-400" />
               <span>{t.navPopular}</span>
             </button>
+
+            {/* Районы */}
             <button
               onClick={() => onNavigate('districts')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
@@ -232,7 +299,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* Right Tools: Currency, Language, Saved, Compare, Concierge */}
+        {/* Right Tools: Currency, Language, Saved, Compare */}
         <div className="hidden lg:flex items-center gap-2">
           {/* Currency Dropdown Selector */}
           <div className="relative">

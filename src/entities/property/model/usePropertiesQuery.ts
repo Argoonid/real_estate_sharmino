@@ -1,7 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { FilterState } from '../../../shared/types';
 import { SupabaseService } from '../../../shared/api/supabase';
-import { INITIAL_FILTER } from '../../../features/filter-properties/model/filtersStore';
 import { useExchangeRates } from '../../../shared/lib/exchangeRates';
 import { UNLIMITED_PRICE } from '../../../shared/lib/formatters';
 
@@ -63,39 +62,6 @@ export function useAllMapPropertiesQuery(
     enabled:
       (options.enabled ?? true) &&
       (!requiresExchangeRates(filter) || exchangeRatesQuery.isSuccess),
-  });
-}
-
-export function useRentalPropertiesQuery() {
-  const exchangeRatesQuery = useExchangeRates();
-  return useQuery({
-    queryKey: [...PROPERTIES_QUERY_KEY, 'rentals', exchangeRatesQuery.data],
-    queryFn: async () => {
-      const [daily, monthly] = await Promise.all([
-        SupabaseService.fetchProperties(
-          { ...INITIAL_FILTER, deal: 'daily_rent' },
-          { pageSize: 6, exchangeRates: exchangeRatesQuery.data },
-        ),
-        SupabaseService.fetchProperties(
-          { ...INITIAL_FILTER, deal: 'long_term_rent' },
-          { pageSize: 6, exchangeRates: exchangeRatesQuery.data },
-        ),
-      ]);
-      return [...daily.properties, ...monthly.properties].slice(0, 6);
-    },
-    enabled: true,
-  });
-}
-
-export function usePropertyPageQuery(filter: FilterState, pageSize = 6) {
-  const exchangeRatesQuery = useExchangeRates();
-  return useQuery({
-    queryKey: [...PROPERTIES_QUERY_KEY, 'page', filter, pageSize, exchangeRatesQuery.data],
-    queryFn: () => SupabaseService.fetchProperties(filter, {
-      pageSize,
-      exchangeRates: exchangeRatesQuery.data,
-    }),
-    enabled: !requiresExchangeRates(filter) || exchangeRatesQuery.isSuccess,
   });
 }
 

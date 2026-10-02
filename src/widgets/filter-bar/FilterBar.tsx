@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FilterState, Currency, DealType } from '../../shared/types';
 import { useDistrictsQuery } from '../../entities/district/model/useDistrictsQuery';
 import { getDistrictLabel, Language, translations } from '../../shared/i18n';
@@ -10,12 +10,9 @@ import {
   Search,
   SlidersHorizontal,
   RotateCcw,
-  Waves,
-  Building,
   Check,
   ChevronDown,
   X,
-  Sparkles,
 } from 'lucide-react';
 
 export interface FilterBarProps {
@@ -46,8 +43,34 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [localSearch, setLocalSearch] = useState(filter.searchQuery || '');
 
   const t = translations[language];
+
+  // Синхронизация при внешнем сбросе фильтров или изменении извне
+  useEffect(() => {
+    setLocalSearch(filter.searchQuery || '');
+  }, [filter.searchQuery]);
+
+  // Дебаунс 250 мс для предотвращения лишних сетевых запросов при печати
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== (filter.searchQuery || '')) {
+        onChange((prev) => ({ ...prev, searchQuery: localSearch }));
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localSearch, filter.searchQuery, onChange]);
+
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    onChange((prev) => ({ ...prev, searchQuery: '' }));
+  };
+
+  const handleResetFilters = () => {
+    setLocalSearch('');
+    onReset();
+  };
 
   const handleDealType = (type: DealType | 'all') => {
     onChange((prev) => ({ ...prev, deal: type }));
@@ -71,7 +94,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       ? 'EGP'
       : '₽';
 
-  // Count active non-default filters
+  // Подсчёт активных фильтров
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filter.deal && filter.deal !== 'all') count++;
@@ -92,9 +115,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     return count;
   }, [filter]);
 
-  const hasActiveFilters = activeFilterCount > 0 || Boolean(filter.searchQuery);
+  const hasActiveFilters = activeFilterCount > 0 || Boolean(filter.searchQuery || localSearch);
 
-  // Active district name for collapsed summary chip
+  // Название выбранного района для свёрнутой плашки
   const activeDistrictName = useMemo(() => {
     if (!filter.districtId || filter.districtId === 'all') return null;
     const d = districts.find((x) => x.id === filter.districtId);
@@ -114,22 +137,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   return (
     <div className="bg-white border-b border-slate-200/90 shadow-2xs sticky top-0 lg:top-[68px] z-30 backdrop-blur-md bg-white/95 transition-all">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 space-y-2.5">
-        {/* Row 1: Search Bar, Advanced Filters Toggle, Reset & Collapse Arrow */}
+        {/* Строка 1: Поиск, кнопка фильтров, сброс и сворачивание */}
         <div className="flex items-center gap-2">
-          {/* Search Input with Clear Button */}
+          {/* Поле поиска с иконкой и кнопкой быстрой очистки */}
           <div className="relative flex-1 min-w-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
-              value={filter.searchQuery || ''}
-              onChange={(e) => onChange((prev) => ({ ...prev, searchQuery: e.target.value }))}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="w-full pl-9 pr-8 py-2 sm:py-1.5 text-xs bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition truncate"
             />
-            {filter.searchQuery && (
+            {localSearch && (
               <button
-                onClick={() => onChange((prev) => ({ ...prev, searchQuery: '' }))}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer"
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer transition-colors"
                 title={t.close}
               >
                 <X className="w-3.5 h-3.5" />
@@ -137,8 +161,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             )}
           </div>
 
-          {/* Quick Filters Button with Active Count Badge */}
+          {/* Кнопка расширенных фильтров с бейджем количества */}
           <button
+            type="button"
             onClick={() => {
               if (isCollapsed) setIsCollapsed(false);
               setShowAdvanced(!showAdvanced);
@@ -160,10 +185,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             )}
           </button>
 
-          {/* Reset Filters Button (if active) */}
+          {/* Кнопка полного сброса фильтров */}
           {hasActiveFilters && (
             <button
-              onClick={onReset}
+              type="button"
+              onClick={handleResetFilters}
               title={t.reset}
               className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition cursor-pointer shrink-0"
             >
@@ -171,8 +197,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
           )}
 
-          {/* Collapse/Expand Arrow Toggle Button (Стрелочка скрытия фильтров) */}
+          {/* Стрелочка сворачивания/разворачивания панели */}
           <button
+            type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`p-2 rounded-xl border transition cursor-pointer shrink-0 flex items-center justify-center ${
               isCollapsed
@@ -189,7 +216,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </button>
         </div>
 
-        {/* Collapsed State Quick Summary Bar (Visible only when collapsed and active filters exist) */}
+        {/* Компактная сводка при свёрнутом состоянии */}
         {isCollapsed && hasActiveFilters && (
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[11px] animate-in fade-in duration-200">
             <span className="text-slate-400 font-medium shrink-0">{t.activeFilters}</span>
@@ -248,6 +275,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </span>
             )}
             <button
+              type="button"
               onClick={() => setIsCollapsed(false)}
               className="text-sky-600 font-bold underline hover:text-sky-800 shrink-0 ml-1 cursor-pointer"
             >
@@ -256,12 +284,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
         )}
 
-        {/* Expandable Section: Deal Tabs & District Chips */}
+        {/* Развёрнутая секция: переключатели сделок и чипы районов */}
         {!isCollapsed && (
           <div className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
-            {/* Deal Type Switcher Segment (Equal width on mobile, no multi-line wrap!) */}
+            {/* Переключатель сделок (мобильный вид) */}
             <div className="flex lg:hidden items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/80 overflow-x-auto no-scrollbar">
               <button
+                type="button"
                 onClick={() => handleDealType('all')}
                 className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-center cursor-pointer ${
                   filter.deal === 'all'
@@ -272,6 +301,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 {t.dealAll}
               </button>
               <button
+                type="button"
                 onClick={() => handleDealType('sale')}
                 className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-center cursor-pointer ${
                   filter.deal === 'sale'
@@ -282,6 +312,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 {t.dealSale}
               </button>
               <button
+                type="button"
                 onClick={() => handleDealType('long_term_rent')}
                 className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-center cursor-pointer ${
                   filter.deal === 'long_term_rent'
@@ -293,6 +324,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <span className="hidden sm:inline">{t.dealRentLong}</span>
               </button>
               <button
+                type="button"
                 onClick={() => handleDealType('daily_rent')}
                 className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-center cursor-pointer ${
                   filter.deal === 'daily_rent'
@@ -304,9 +336,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </button>
             </div>
 
-            {/* Districts Scrollable Horizontal Pills */}
+            {/* Чипы районов со скроллом */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               <button
+                type="button"
                 onClick={() => handleDistrict('all')}
                 className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition cursor-pointer whitespace-nowrap ${
                   filter.districtId === 'all'
@@ -319,6 +352,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               {districts.map((d) => (
                 <button
                   key={d.id}
+                  type="button"
                   onClick={() => handleDistrict(d.id)}
                   className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                     filter.districtId === d.id
@@ -332,7 +366,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               ))}
             </div>
 
-            {/* Advanced Filters Panel (expanded on demand) */}
+            {/* Панель расширенных параметров */}
             {showAdvanced && (
               <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2.5 animate-in fade-in duration-150">
                 <CustomDropdown
@@ -348,7 +382,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   className="w-full"
                 />
 
-                {/* Property Type */}
+                {/* Тип объекта */}
                 <CustomDropdown
                   value={filter.propertyType || 'all'}
                   onChange={(value) => onChange((prev) => ({ ...prev, propertyType: value }))}
@@ -360,7 +394,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   className="w-full"
                 />
 
-                {/* Bedrooms */}
+                {/* Спальни */}
                 <CustomDropdown
                   value={filter.bedrooms || 'all'}
                   onChange={(value) => onChange((prev) => ({ ...prev, bedrooms: value }))}
@@ -374,7 +408,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   className="w-full"
                 />
 
-                {/* Bathrooms */}
+                {/* Санузлы */}
                 <CustomDropdown
                   value={filter.bathrooms || 'all'}
                   onChange={(value) => onChange((prev) => ({ ...prev, bathrooms: value }))}
@@ -387,7 +421,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   className="w-full"
                 />
 
-                {/* Minimum Price */}
+                {/* Минимальная цена */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     {t.priceFrom} ({currencySymbol})
@@ -411,7 +445,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   />
                 </div>
 
-                {/* Maximum Price */}
+                {/* Максимальная цена */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     {t.maxPrice} ({currencySymbol})
@@ -431,7 +465,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   />
                 </div>
 
-                {/* Minimum Area */}
+                {/* Минимальная площадь */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     {t.areaFrom}
@@ -455,7 +489,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   />
                 </div>
 
-                {/* Maximum Area */}
+                {/* Максимальная площадь */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     {t.areaTo}
@@ -475,7 +509,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   />
                 </div>
 
-                {/* Result sorting */}
+                {/* Сортировка */}
                 <CustomDropdown
                   value={filter.sortBy}
                   onChange={(value) => onChange((prev) => ({ ...prev, sortBy: value as FilterState['sortBy'] }))}
@@ -490,6 +524,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   className="w-full"
                 />
 
+                {/* Чекбоксы характеристик */}
                 {[
                   { key: 'seaViewOnly', label: t.seaView },
                   { key: 'beachAccessOnly', label: t.privateBeach },

@@ -12,10 +12,9 @@ import { Footer } from '../widgets/footer/Footer';
 import { MobileBottomBar } from '../widgets/mobile-bottom-bar/MobileBottomBar';
 
 // Pages
+import { HomePage } from '../pages/home/HomePage';
 import { CatalogPage } from '../pages/catalog/CatalogPage';
 import { PopularPage } from '../pages/popular/PopularPage';
-import { SalePage } from '../pages/sale/SalePage';
-import { RentPage } from '../pages/rent/RentPage';
 import { DistrictsPage } from '../pages/districts/DistrictsPage';
 import { PropertyDetailPage } from '../pages/property-detail/PropertyDetailPage';
 import { AdminPage } from '../pages/admin/AdminPage';
@@ -37,11 +36,12 @@ import { revokeAnalyticsConsent, trackPageView } from '../services/analytics';
 import { translations } from '../shared/i18n';
 
 function isNavigablePageId(value: string | null): value is Exclude<PageId, 'property' | 'admin'> {
-  return value === 'catalog' ||
-    value === 'sale' ||
-    value === 'rent' ||
+  return (
+    value === 'home' ||
+    value === 'catalog' ||
     value === 'popular' ||
-    value === 'districts';
+    value === 'districts'
+  );
 }
 
 export const AppContent: React.FC = () => {
@@ -49,6 +49,17 @@ export const AppContent: React.FC = () => {
   const setActivePage = useUIStore((s) => s.setActivePage);
   const language = useUIStore((s) => s.language);
   const setLanguage = useUIStore((s) => s.setLanguage);
+
+  const handleNavigate = useCallback(
+    (page: PageId) => {
+      if (page === 'catalog') {
+        setActivePage('catalog');
+      } else {
+        setActivePage(page);
+      }
+    },
+    [setActivePage],
+  );
 
   const openAdmin = useCallback(() => {
     if (window.location.pathname.replace(/\/+$/, '') !== '/admin') {
@@ -59,7 +70,7 @@ export const AppContent: React.FC = () => {
 
   const closeAdmin = useCallback(() => {
     window.history.replaceState({}, '', '/');
-    setActivePage('catalog');
+    setActivePage('home');
   }, [setActivePage]);
 
   const selectedPropertyId = useUIStore((s) => s.selectedPropertyId);
@@ -79,7 +90,9 @@ export const AppContent: React.FC = () => {
   useEffect(() => {
     const trackCurrentPage = () => {
       if (ConsentService.getConsentStatus() === 'all') {
-        const pagePath = `${window.location.pathname}?page=${activePage}${selectedPropertyId ? `&property=${encodeURIComponent(selectedPropertyId)}` : ''}`;
+        const pagePath = `${window.location.pathname}?page=${activePage}${
+          selectedPropertyId ? `&property=${encodeURIComponent(selectedPropertyId)}` : ''
+        }`;
         trackPageView(pagePath);
       } else {
         revokeAnalyticsConsent();
@@ -90,8 +103,13 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener(CONSENT_CHANGED_EVENT, trackCurrentPage);
   }, [activePage, selectedPropertyId]);
 
+  // Управление открытием модалки бронирования/подбора
+  const isBookingOpen = useUIStore((s) => s.isBookingOpen);
   const bookingProperty = useUIStore((s) => s.bookingProperty);
   const closeBooking = useUIStore((s) => s.closeBooking);
+
+  // Страховочный флаг: открываем, если выставлен isBookingOpen ИЛИ если передан bookingProperty
+  const showBookingModal = isBookingOpen || Boolean(bookingProperty);
 
   const isSettingsOpen = useUIStore((s) => s.isSettingsOpen);
   const setSettingsOpen = useUIStore((s) => s.setSettingsOpen);
@@ -105,35 +123,34 @@ export const AppContent: React.FC = () => {
   const isShareProfileOpen = useUIStore((s) => s.isShareProfileOpen);
   const setShareProfileOpen = useUIStore((s) => s.setShareProfileOpen);
 
-  // Filter store sync
   const currency = useFilterStore((s) => s.filter.currency);
   const { data: exchangeRates } = useExchangeRates();
-  const setCurrency = useCallback((nextCurrency: typeof currency) => {
-    const currentFilter = useFilterStore.getState().filter;
-    const convertLimit = (value: number) =>
-      Math.round(
-        convertCurrency(value, currentFilter.currency, nextCurrency, exchangeRates) ?? value,
-      );
+  const setCurrency = useCallback(
+    (nextCurrency: typeof currency) => {
+      const currentFilter = useFilterStore.getState().filter;
+      const convertLimit = (value: number) =>
+        Math.round(
+          convertCurrency(value, currentFilter.currency, nextCurrency, exchangeRates) ?? value,
+        );
 
-    useFilterStore.getState().setFilter({
-      currency: nextCurrency,
-      minPrice: convertLimit(currentFilter.minPrice),
-      maxPrice:
-        currentFilter.maxPrice === UNLIMITED_PRICE
-          ? UNLIMITED_PRICE
-          : convertLimit(currentFilter.maxPrice),
-    });
-  }, [exchangeRates]);
+      useFilterStore.getState().setFilter({
+        currency: nextCurrency,
+        minPrice: convertLimit(currentFilter.minPrice),
+        maxPrice:
+          currentFilter.maxPrice === UNLIMITED_PRICE
+            ? UNLIMITED_PRICE
+            : convertLimit(currentFilter.maxPrice),
+      });
+    },
+    [exchangeRates],
+  );
   const isOnlyFavorites = useFilterStore((s) => s.isOnlyFavorites);
-  const setIsOnlyFavorites = useFilterStore((s) => s.setIsOnlyFavorites);
   const resetFilters = useFilterStore((s) => s.resetFilters);
 
-  // Profile store for saved/compare
   const favorites = useAnonymousProfileStore((s) => s.favorites);
   const compareIds = useAnonymousProfileStore((s) => s.compareIds);
   const importProfileData = useAnonymousProfileStore((s) => s.importProfileData);
 
-  // Deep Link URL Hydration
   useEffect(() => {
     if (window.location.pathname.replace(/\/+$/, '') === '/admin') {
       setActivePage('admin');
@@ -141,7 +158,8 @@ export const AppContent: React.FC = () => {
 
     const handleAdminShortcut = (event: KeyboardEvent) => {
       const target = event.target;
-      const isEditing = target instanceof HTMLElement &&
+      const isEditing =
+        target instanceof HTMLElement &&
         (target.isContentEditable || target.matches('input, textarea, select'));
       if (
         !isEditing &&
@@ -162,10 +180,15 @@ export const AppContent: React.FC = () => {
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
-
-      // Check URL query parameters
       const pageParam = url.searchParams.get('page');
-      if (isNavigablePageId(pageParam)) {
+
+      if (pageParam === 'sale') {
+        useFilterStore.getState().setFilter({ deal: 'sale' });
+        setActivePage('catalog');
+      } else if (pageParam === 'rent') {
+        useFilterStore.getState().setFilter({ deal: 'long_term_rent' });
+        setActivePage('catalog');
+      } else if (isNavigablePageId(pageParam)) {
         setActivePage(pageParam);
       }
 
@@ -179,14 +202,12 @@ export const AppContent: React.FC = () => {
         setComparisonOpen(true);
       }
 
-      // Check Hash for Anonymous Profile import (#profile=base64...)
       const hash = window.location.hash;
       if (hash && hash.includes('profile=')) {
         const base64 = hash.split('profile=')[1];
         if (base64) {
           const res = importProfileData(base64);
           if (res.success) {
-            // Clean hash
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setSavedOpen(true);
           }
@@ -197,12 +218,10 @@ export const AppContent: React.FC = () => {
     }
   }, [setActivePage, setComparisonOpen, setSavedOpen, importProfileData]);
 
-  // Sync title and language on root
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
 
-  // Find selected property for modal
   const activePropertyDetail = React.useMemo(() => {
     if (selectedProperty) return selectedProperty;
     if (selectedPropertyId) {
@@ -213,10 +232,10 @@ export const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 selection:bg-sky-500 selection:text-white font-sans antialiased">
-      {/* Primary Navigation Header */}
+      {/* Header */}
       <Navbar
         currentPage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         currency={currency}
         onCurrencyChange={setCurrency}
         language={language}
@@ -230,47 +249,37 @@ export const AppContent: React.FC = () => {
         isOnlyFavorites={isOnlyFavorites}
       />
 
-      {/* 3. Main Viewport & Dynamic Routing */}
+      {/* Main Viewport */}
       <main className="flex-1 flex flex-col pb-16 lg:pb-0">
+        {activePage === 'home' && <HomePage />}
         {activePage === 'catalog' && <CatalogPage />}
         {activePage === 'popular' && <PopularPage />}
-        {activePage === 'sale' && <SalePage />}
-        {activePage === 'rent' && <RentPage />}
         {activePage === 'districts' && <DistrictsPage />}
-        {activePage === 'admin' && (
-          <AdminPage
-            language={language}
-            onClose={closeAdmin}
-          />
-        )}
+        {activePage === 'admin' && <AdminPage language={language} onClose={closeAdmin} />}
       </main>
 
-      {/* 4. Footer */}
+      {/* Footer */}
       {activePage !== 'admin' && (
         <Footer
           language={language}
-          onNavigate={setActivePage}
+          onNavigate={handleNavigate}
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenFavorites={() => setSavedOpen(true)}
           onResetFilters={resetFilters}
         />
       )}
 
-      {/* 5. Mobile Bottom App Bar */}
+      {/* Mobile Bottom Bar */}
       <MobileBottomBar
         currentPage={activePage}
         language={language}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         favoritesCount={favorites.length}
         onOpenFavorites={() => setSavedOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      {/* ======================================================== */}
-      {/* MODAL OVERLAYS & DIALOGS */}
-      {/* ======================================================== */}
-
-      {/* 1. Property Detail Full-Screen Drawer / Modal */}
+      {/* Modals */}
       {activePropertyDetail && (
         <PropertyDetailPage
           property={activePropertyDetail}
@@ -285,18 +294,17 @@ export const AppContent: React.FC = () => {
         />
       )}
 
-      {/* 2. Booking Modal */}
-      {bookingProperty && (
+      {/* Booking / Concierge Modal: открывается и по кнопке подбора, и по карточке */}
+      {showBookingModal && (
         <BookingModal
           property={bookingProperty}
           currency={currency}
           language={language}
-          isOpen={Boolean(bookingProperty)}
+          isOpen={showBookingModal}
           onClose={closeBooking}
         />
       )}
 
-      {/* 3. Comparison Modal */}
       <PropertyComparisonModal
         isOpen={isComparisonOpen}
         onClose={() => setComparisonOpen(false)}
@@ -305,7 +313,6 @@ export const AppContent: React.FC = () => {
         onBookViewing={(p) => useUIStore.getState().openBooking(p)}
       />
 
-      {/* 4. Saved Properties & Anonymous Profile Modal */}
       <SavedPropertiesModal
         isOpen={isSavedOpen}
         onClose={() => setSavedOpen(false)}
@@ -313,13 +320,11 @@ export const AppContent: React.FC = () => {
         language={language}
       />
 
-      {/* 5. Share Anonymous Profile Modal */}
       <ShareProfileModal
         isOpen={isShareProfileOpen}
         onClose={() => setShareProfileOpen(false)}
       />
 
-      {/* 6. Global Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -327,13 +332,10 @@ export const AppContent: React.FC = () => {
         onCurrencyChange={setCurrency}
         language={language}
         onLanguageChange={setLanguage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
       />
 
-      {/* 7. Cookie & Privacy Consent Banner */}
       <CookieBanner language={language} />
-
-      {/* 8. Scroll To Top Floater */}
       <ScrollToTop language={language} />
     </div>
   );

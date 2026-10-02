@@ -10,7 +10,8 @@ interface UIState {
   selectedPropertyId: string | null;
   selectedProperty: DatabaseProperty | null;
 
-  // Property for booking
+  // Booking / Concierge modal state
+  isBookingOpen: boolean;
   bookingProperty: DatabaseProperty | null;
 
   // Modals state
@@ -24,7 +25,7 @@ interface UIState {
   setLanguage: (lang: Language) => void;
   openPropertyDetail: (prop: DatabaseProperty | string) => void;
   closePropertyDetail: () => void;
-  openBooking: (prop: DatabaseProperty) => void;
+  openBooking: (prop?: DatabaseProperty | null) => void;
   closeBooking: () => void;
 
   setSettingsOpen: (open: boolean) => void;
@@ -34,11 +35,12 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  activePage: 'catalog',
+  activePage: 'home',
   language: getInitialLanguage(),
 
   selectedPropertyId: null,
   selectedProperty: null,
+  isBookingOpen: false,
   bookingProperty: null,
 
   isSettingsOpen: false,
@@ -50,7 +52,7 @@ export const useUIStore = create<UIState>((set) => ({
     set({ activePage: page });
     try {
       const url = new URL(window.location.href);
-      if (page === 'catalog') {
+      if (page === 'home') {
         url.searchParams.delete('page');
       } else {
         url.searchParams.set('page', page);
@@ -95,8 +97,8 @@ export const useUIStore = create<UIState>((set) => ({
     }
   },
 
-  openBooking: (prop) => set({ bookingProperty: prop }),
-  closeBooking: () => set({ bookingProperty: null }),
+  openBooking: (prop) => set({ isBookingOpen: true, bookingProperty: prop ?? null }),
+  closeBooking: () => set({ isBookingOpen: false, bookingProperty: null }),
 
   setSettingsOpen: (open) => set({ isSettingsOpen: open }),
   setComparisonOpen: (open) => set({ isComparisonOpen: open }),

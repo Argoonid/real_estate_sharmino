@@ -4,6 +4,7 @@ import type { Database } from '../types/database.types';
 import type { Currency, DatabaseProperty, DealType, District, FilterState, PropertyType } from '../types';
 import type { ExchangeRates } from '../lib/exchangeRates';
 import { UNLIMITED_PRICE } from '../lib/formatters';
+import { parseSmartSearch } from '../lib/smartSearch';
 
 export type PropertyRow = Database['public']['Tables']['properties']['Row'];
 export type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
@@ -281,24 +282,64 @@ export class SupabaseService {
       query = query.in('id', options.favoriteIds);
     }
 
-    const search = filter.searchQuery.trim();
-    if (search) {
-      const pattern = escapePostgrestPattern(search);
-      const { data: matchingDistricts, error: districtError } = await db
-        .from('districts')
-        .select('id')
-        .or(`name_ru.ilike."${pattern}",name_en.ilike."${pattern}",slug.ilike."${pattern}"`);
-      if (districtError) throw districtError;
+    const rawSearch = filter.searchQuery.trim();
+    if (rawSearch) {
+      const smart = parseSmartSearch(rawSearch);
 
-      const searchConditions = [
-        `title.ilike."${pattern}"`,
-        `description.ilike."${pattern}"`,
-        `compound_name.ilike."${pattern}"`,
-      ];
-      if (matchingDistricts.length > 0) {
-        searchConditions.push(`district_id.in.(${matchingDistricts.map(({ id }) => id).join(',')})`);
+      // 1. Поиск по номеру или ID
+      if (smart.idCode) {
+        const idPattern = `%${smart.idCode}%`;
+        const idConditions = [
+          `id.ilike.${idPattern}`,
+          `slug.ilike.${idPattern}`,
+          `title.ilike.${idPattern}`,
+          `source_external_id.ilike.${idPattern}`,
+        ];
+        query = query.or(idConditions.join(','));
       }
-      query = query.or(searchConditions.join(','));
+
+      // 2. Распознанные параметры (район, тип жилья, число комнат, сделка)
+      if (smart.districts.length > 0 && filter.districtId === 'all') {
+        const districtList = smart.districts.join(',');
+        const distPatterns = smart.districts.map((d) => `title.ilike.%${d}%`).join(',');
+        query = query.or(`district_id.in.(${districtList}),${distPatterns}`);
+      }
+      if (smart.propertyTypes.length > 0 && filter.propertyType === 'all') {
+        const typeList = smart.propertyTypes.join(',');
+        query = query.in('type', smart.propertyTypes);
+      }
+      if (smart.dealTypes.length > 0 && filter.deal === 'all') {
+        query = query.in('deal', smart.dealTypes);
+      }
+      if (smart.bedrooms !== null && filter.bedrooms === 'all') {
+        query = query.eq('bedrooms', smart.bedrooms);
+      }
+      if (smart.features.includes('sea_view') && !filter.seaViewOnly) {
+        query = query.eq('view', 'sea_view');
+      }
+      if (smart.features.includes('beach_access') && !filter.beachAccessOnly) {
+        query = query.eq('has_beach_access', true);
+      }
+      if (smart.features.includes('pool') && !filter.poolOnly) {
+        query = query.overlaps('amenities', ['pool', 'swimming_pool', 'private_pool']);
+      }
+      if (smart.features.includes('furnished') && !filter.furnishedOnly) {
+        query = query.eq('is_furnished', true);
+      }
+
+      // 3. Текстовые ключевые слова (поиск по названию, описанию и адресу)
+      if (smart.textTerms.length > 0) {
+        for (const term of smart.textTerms) {
+          const clean = term.replace(/[(),"\\]/g, '').trim();
+          if (clean.length > 1) {
+            const pattern = `%${clean}%`;
+            query = query.or(`title.ilike.${pattern},description.ilike.${pattern},compound_name.ilike.${pattern}`);
+          }
+        }
+      } else if (!smart.isStructuredSearch && !smart.idCode) {
+        const cleanPattern = `%${rawSearch.replace(/\s+/g, '%').replace(/[(),"\\]/g, '')}%`;
+        query = query.or(`title.ilike.${cleanPattern},description.ilike.${cleanPattern},compound_name.ilike.${cleanPattern}`);
+      }
     }
 
     const orderBy = filter.sortBy === 'price_asc'

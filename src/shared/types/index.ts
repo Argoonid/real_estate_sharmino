@@ -4,7 +4,7 @@ export type PropertyType = 'studio' | 'apartment' | 'villa' | 'penthouse' | 'cha
 
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'EGP' | 'RUB';
 
-export type PageId = 'catalog' | 'sale' | 'rent' | 'popular' | 'districts' | 'admin' | 'property';
+export type PageId = 'home' | 'catalog' | 'popular' | 'districts' | 'admin' | 'property';
 
 // Unified Database JSON structure
 export interface DatabaseProperty {
@@ -107,11 +107,14 @@ export interface AlertSubscription {
   createdAt: string;
 }
 
+export type PreferredContact = 'whatsapp' | 'telegram' | 'phone';
+
 export interface BookingRequest {
   propertyId: string;
   clientName: string;
   clientPhone: string;
-  clientTelegram: string;
+  clientTelegram?: string;
+  preferredContact?: PreferredContact;
   viewingDate: string;
   viewingTime: string;
   viewingType: 'in_person' | 'online_video' | 'rent_reserve';
