@@ -69,7 +69,16 @@ export const AppContent: React.FC = () => {
   }, [setActivePage]);
 
   const closeAdmin = useCallback(() => {
-    window.history.replaceState({}, '', '/');
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('admin');
+      if (url.searchParams.get('page') === 'admin') {
+        url.searchParams.delete('page');
+      }
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    } catch {
+      window.history.replaceState({}, '', '/');
+    }
     setActivePage('home');
   }, [setActivePage]);
 
@@ -103,12 +112,10 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener(CONSENT_CHANGED_EVENT, trackCurrentPage);
   }, [activePage, selectedPropertyId]);
 
-  // Управление открытием модалки бронирования/подбора
   const isBookingOpen = useUIStore((s) => s.isBookingOpen);
   const bookingProperty = useUIStore((s) => s.bookingProperty);
   const closeBooking = useUIStore((s) => s.closeBooking);
 
-  // Страховочный флаг: открываем, если выставлен isBookingOpen ИЛИ если передан bookingProperty
   const showBookingModal = isBookingOpen || Boolean(bookingProperty);
 
   const isSettingsOpen = useUIStore((s) => s.isSettingsOpen);
@@ -182,7 +189,10 @@ export const AppContent: React.FC = () => {
       const url = new URL(window.location.href);
       const pageParam = url.searchParams.get('page');
 
-      if (pageParam === 'sale') {
+      // Открытие админки по query-параметру (?admin или ?page=admin)
+      if (url.searchParams.has('admin') || pageParam === 'admin') {
+        setActivePage('admin');
+      } else if (pageParam === 'sale') {
         useFilterStore.getState().setFilter({ deal: 'sale' });
         setActivePage('catalog');
       } else if (pageParam === 'rent') {
@@ -294,7 +304,6 @@ export const AppContent: React.FC = () => {
         />
       )}
 
-      {/* Booking / Concierge Modal: открывается и по кнопке подбора, и по карточке */}
       {showBookingModal && (
         <BookingModal
           property={bookingProperty}
