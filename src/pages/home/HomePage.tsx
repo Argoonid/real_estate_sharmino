@@ -4,6 +4,7 @@ import { useFilterStore } from '../../features/filter-properties/model/filtersSt
 import { useUIStore } from '../../app/model/uiStore';
 import { useDistrictsQuery } from '../../entities/district/model/useDistrictsQuery';
 import { useRecentPropertiesQuery } from '../../entities/property/model/usePropertiesQuery';
+import { DatabaseProperty } from '../../shared/types';
 import { useAnonymousProfileStore } from '../../features/anonymous-profile/model/anonymousProfileStore';
 import { PropertyCard } from '../../entities/property/ui/PropertyCard';
 import { translations, getDistrictLabel } from '../../shared/i18n';
@@ -351,7 +352,7 @@ export const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {recentProperties.slice(0, 6).map((property) => (
+            {recentProperties.slice(0, 6).map((property: DatabaseProperty) => (
               <PropertyCard
                 key={property.id}
                 property={property}

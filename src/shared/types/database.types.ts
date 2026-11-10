@@ -47,6 +47,8 @@ export interface Database {
           deal: string;
           type: string;
           is_active: boolean;
+          is_admin_selected: boolean;
+          admin_notes: string | null;
           price_amount: number;
           price_currency: string;
           price_egp_standard: number;
@@ -85,6 +87,8 @@ export interface Database {
           deal?: string;
           type?: string;
           is_active?: boolean;
+          is_admin_selected?: boolean;
+          admin_notes?: string | null;
           price_amount?: number;
           price_currency?: string;
           price_egp_standard?: number;
@@ -123,6 +127,8 @@ export interface Database {
           deal?: string;
           type?: string;
           is_active?: boolean;
+          is_admin_selected?: boolean;
+          admin_notes?: string | null;
           price_amount?: number;
           price_currency?: string;
           price_egp_standard?: number;

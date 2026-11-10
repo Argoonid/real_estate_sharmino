@@ -14,6 +14,8 @@ export interface DatabaseProperty {
   deal: DealType;
   type: PropertyType;
   is_active: boolean;
+  is_admin_selected?: boolean;
+  admin_notes?: string;
   price: {
     amount: number;
     currency: Currency;
@@ -128,3 +130,6 @@ export interface AnonymousUserProfile {
   recentViews: string[];
   compareIds: string[];
 }
+```eof
+
+Скопируй этот код в свой файл `index.ts` и сохрани его. TypeScript моментально перекомпилирует проект, и вся «краснота» в редакторе должна полностью пропасть! Дай знать, если останутся какие-то мелкие ворнинги.

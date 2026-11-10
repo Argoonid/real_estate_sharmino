@@ -8,7 +8,7 @@ import { getSupabaseClient, isSupabaseConfigured } from '../../shared/api/supaba
 import { ENV } from '../../config/env';
 import { getBookingLeads } from '../../services/api';
 import { ImageOptimizerService } from '../../services/imageOptimizer';
-import { Database, Download, ImageOff, LogOut, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Database, Download, ImageOff, LogOut, RefreshCw, ShieldAlert, Star, Edit3 } from 'lucide-react';
 
 export interface AdminPageProps {
   language: Language;
@@ -31,7 +31,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loginPending, setLoginPending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'properties' | 'problematic' | 'leads'>('properties');
+  
+  // Обновленные табы
+  const [activeTab, setActiveTab] = useState<'properties' | 'selected' | 'problematic' | 'leads'>('properties');
+  
+  // Состояния для редактирования
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<PropertyUpdate>>({});
+
   const [imageReport, setImageReport] = useState<Record<string, ImageCheck>>({});
   const [imageScanProgress, setImageScanProgress] = useState({ completed: 0, total: 0 });
   const [imageScanError, setImageScanError] = useState('');
@@ -51,13 +58,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
     retry: false,
   });
 
+  const selectedPropertiesQuery = useQuery({
+    queryKey: ['admin-selected-properties'],
+    queryFn: () => SupabaseService.fetchAllProperties(INITIAL_FILTER, { includeInactive: true, adminSelectedOnly: true }),
+    enabled: Boolean(adminQuery.data),
+    retry: false,
+  });
+
   const leadsQuery = useQuery({
     queryKey: ['admin-leads'],
     queryFn: getBookingLeads,
     enabled: Boolean(adminQuery.data),
     retry: false,
   });
+
   const properties = propertiesQuery.data ?? [];
+  const selectedProperties = selectedPropertiesQuery.data ?? [];
   const problematicProperties = properties.filter((property) => {
     const urls = property.images ?? [];
     return urls.length === 0 || urls.some((url) => imageReport[url]?.ok === false);
@@ -99,6 +115,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
       SupabaseService.updateProperty(id, update),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-selected-properties'] });
       onPropertyUpdated?.();
     },
   });
@@ -231,9 +248,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
         </div>
       </div>
 
-      {(propertiesQuery.error || leadsQuery.error || updateProperty.error) && (
+      {(propertiesQuery.error || selectedPropertiesQuery.error || leadsQuery.error || updateProperty.error) && (
         <p role="alert" className="mb-4 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
-          {[propertiesQuery.error, leadsQuery.error, updateProperty.error]
+          {[propertiesQuery.error, selectedPropertiesQuery.error, leadsQuery.error, updateProperty.error]
             .filter((error): error is Error => error instanceof Error)
             .map((error) => error.message)
             .join(' · ')}
@@ -243,6 +260,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
       <nav className="mb-5 flex flex-wrap gap-2" aria-label={t.navAdmin}>
         {([
           ['properties', t.adminProperties],
+          ['selected', `Выбранные (${selectedProperties.length})`],
           ['problematic', `${t.adminProblematic} (${problematicProperties.length})`],
           ['leads', t.adminLeads],
         ] as const).map(([tab, label]) => (
@@ -259,38 +277,117 @@ export const AdminPage: React.FC<AdminPageProps> = ({ language, onClose, onPrope
         ))}
       </nav>
 
-      {activeTab === 'properties' && <section className="mb-8">
-        <h4 className="mb-3 flex items-center gap-2 font-bold text-slate-800">
-          <Database className="h-4 w-4 text-sky-600" />
-          {t.adminProperties} ({properties.length})
-        </h4>
-        {propertiesQuery.isLoading ? (
-          <p className="text-sm text-slate-500">{t.loadingProperties}</p>
-        ) : (
-          <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
-            {properties.map((property: DatabaseProperty) => (
-              <div key={property.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{property.title}</p>
-                  <p className="text-xs text-slate-500">
-                    {property.location.district?.name_ru ?? t.unknownDistrict} · {property.deal} · {property.id}
-                  </p>
-                </div>
-                <button
-                  onClick={() => updateProperty.mutate({ id: property.id, update: { is_active: !property.is_active } })}
-                  disabled={updateProperty.isPending}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
-                    property.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {property.is_active ? t.activeStatus : t.inactiveStatus}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>}
+      {/* ОДИН БЛОК ДЛЯ ВЫВОДА ВСЕХ ИЛИ ВЫБРАННЫХ ОБЪЕКТОВ С РЕДАКТИРОВАНИЕМ */}
+      {(activeTab === 'properties' || activeTab === 'selected') && (
+        <section className="mb-8">
+          <h4 className="mb-3 flex items-center gap-2 font-bold text-slate-800">
+            {activeTab === 'properties' ? <Database className="h-4 w-4 text-sky-600" /> : <Star className="h-4 w-4 text-amber-500" />}
+            {activeTab === 'properties' ? t.adminProperties : 'Пул выбранных объектов'}
+            ({activeTab === 'properties' ? properties.length : selectedProperties.length})
+          </h4>
+          
+          {(activeTab === 'properties' ? propertiesQuery.isLoading : selectedPropertiesQuery.isLoading) ? (
+            <p className="text-sm text-slate-500">{t.loadingProperties}</p>
+          ) : (
+            <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+              {(activeTab === 'properties' ? properties : selectedProperties).map((property: DatabaseProperty) => (
+                <div key={property.id} className="p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{property.title}</p>
+                      <p className="text-xs text-slate-500">
+                        {property.location.district?.name_ru ?? t.unknownDistrict} · {property.deal} · {property.id}
+                      </p>
+                      {/* Индикатор наличия приватной заметки */}
+                      {property.admin_notes && (
+                        <p className="mt-1 text-xs font-medium text-amber-700">📝 {property.admin_notes}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => updateProperty.mutate({ id: property.id, update: { is_active: !property.is_active } })}
+                        disabled={updateProperty.isPending}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                          property.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {property.is_active ? t.activeStatus : t.inactiveStatus}
+                      </button>
+                      <button
+                        onClick={() => updateProperty.mutate({ id: property.id, update: { is_admin_selected: !property.is_admin_selected } })}
+                        disabled={updateProperty.isPending}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                          property.is_admin_selected ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {property.is_admin_selected ? '★ В пуле' : '☆ В пул'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (editingPropertyId === property.id) {
+                            setEditingPropertyId(null);
+                          } else {
+                            setEditingPropertyId(property.id);
+                            setEditForm({ price_amount: property.price.amount, admin_notes: property.admin_notes });
+                          }
+                        }}
+                        className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold ${
+                          editingPropertyId === property.id ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'
+                        }`}
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        {editingPropertyId === property.id ? 'Закрыть' : 'Ред.'}
+                      </button>
+                    </div>
+                  </div>
 
+                  {/* ФОРМА БЫСТРОГО РЕДАКТИРОВАНИЯ */}
+                  {editingPropertyId === property.id && (
+                    <div className="mt-3 rounded-xl bg-slate-50 p-4 border border-slate-200">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">Базовая цена</label>
+                          <input
+                            type="number"
+                            value={editForm.price_amount ?? ''}
+                            onChange={(e) => setEditForm({ ...editForm, price_amount: Number(e.target.value) })}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">Скрытый комментарий (для админа)</label>
+                          <textarea
+                            value={editForm.admin_notes ?? ''}
+                            onChange={(e) => setEditForm({ ...editForm, admin_notes: e.target.value })}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            rows={2}
+                            placeholder="Например: владелец готов скинуть 5%..."
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            updateProperty.mutate({ id: property.id, update: editForm });
+                            setEditingPropertyId(null);
+                          }}
+                          disabled={updateProperty.isPending}
+                          className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          Сохранить изменения
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ОСТАЛЬНЫЕ ВКЛАДКИ БЕЗ ИЗМЕНЕНИЙ */}
       {activeTab === 'problematic' && (
         <section className="mb-8">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

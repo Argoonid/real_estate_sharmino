@@ -1,14 +1,6 @@
 -- ====================================================================
 -- SHARMINO REAL ESTATE — ЧИСТАЯ ПРОДАКШЕН-РАЗВЕРТКА SUPABASE POSTGRESQL
 -- ====================================================================
--- Инструкция по установке:
--- 1. Зайдите в панель Supabase: https://supabase.com/dashboard/project/<ваш_проект>/sql
--- 2. Вставьте этот скрипт целиком в SQL Editor и нажмите RUN.
--- 3. Скопируйте Project URL и Anon Key из Project Settings -> API.
--- 4. Вставьте их в ваш .env:
---    VITE_SUPABASE_URL=https://your-project.supabase.co
---    VITE_SUPABASE_ANON_KEY=your-anon-key
--- ====================================================================
 
 -- 1. РАСШИРЕНИЯ
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -30,9 +22,13 @@ CREATE TABLE IF NOT EXISTS properties (
     id TEXT PRIMARY KEY DEFAULT ('shm_' || substring(md5(random()::text), 1, 10)),
     slug TEXT NOT NULL UNIQUE,
     title TEXT NOT NULL,
-    deal TEXT NOT NULL DEFAULT 'sale', -- 'sale' | 'long_term_rent' | 'daily_rent'
-    type TEXT NOT NULL DEFAULT 'apartment', -- 'studio' | 'apartment' | 'villa' | 'penthouse' | 'chalet' | 'duplex'
+    deal TEXT NOT NULL DEFAULT 'sale', 
+    type TEXT NOT NULL DEFAULT 'apartment',
     is_active BOOLEAN NOT NULL DEFAULT true,
+
+    -- Новые поля для админ-панели
+    is_admin_selected BOOLEAN NOT NULL DEFAULT false,
+    admin_notes TEXT DEFAULT '',
 
     -- Стоимость
     price_amount NUMERIC(14, 2) NOT NULL DEFAULT 0.0,
@@ -87,7 +83,7 @@ CREATE TABLE IF NOT EXISTS leads (
     viewing_time TEXT NOT NULL,
     viewing_type TEXT NOT NULL DEFAULT 'in_person',
     notes TEXT DEFAULT NULL,
-    status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'confirmed' | 'contacted' | 'rejected'
+    status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -97,40 +93,34 @@ CREATE INDEX IF NOT EXISTS idx_properties_district ON properties (district_id);
 CREATE INDEX IF NOT EXISTS idx_properties_type ON properties (type);
 CREATE INDEX IF NOT EXISTS idx_properties_coords ON properties (lat, lng);
 CREATE INDEX IF NOT EXISTS idx_leads_date ON leads (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_properties_admin_selected ON properties (is_admin_selected);
 
 -- 6. НАСТРОЙКА БЕЗОПАСНОСТИ ROW LEVEL SECURITY (RLS)
 ALTER TABLE districts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
--- Удаление старых политик (если пересоздаются)
 DROP POLICY IF EXISTS "Public can view districts" ON districts;
 DROP POLICY IF EXISTS "Public can view active properties" ON properties;
 DROP POLICY IF EXISTS "Public can insert leads" ON leads;
 DROP POLICY IF EXISTS "Admins full access to properties" ON properties;
 DROP POLICY IF EXISTS "Admins full access to leads" ON leads;
-DROP POLICY IF EXISTS "Authenticated users can manage properties" ON properties;
-DROP POLICY IF EXISTS "Authenticated users can manage leads" ON leads;
 
--- Публичный доступ на чтение районов и активных объектов
 CREATE POLICY "Public can view districts" ON districts FOR SELECT USING (true);
 CREATE POLICY "Public can view active properties" ON properties FOR SELECT USING (is_active = true);
+CREATE POLICY "Public can insert leads" ON leads FOR INSERT WITH CHECK (status = 'pending');
 
--- Публичный доступ на отправку заявок на просмотр
-CREATE POLICY "Public can insert leads" ON leads
-    FOR INSERT WITH CHECK (status = 'pending');
-
--- Доступ администратора проверяется по claim, который задается только доверенным сервером.
 CREATE POLICY "Admins full access to properties" ON properties
     FOR ALL TO authenticated
     USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
     WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+    
 CREATE POLICY "Admins full access to leads" ON leads
     FOR ALL TO authenticated
     USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
     WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
--- 7. БАЗОВЫЕ РАЙОНЫ ШАРМ-ЭЛЬ-ШЕЙХА
+-- 7. БАЗОВЫЕ РАЙОНЫ
 INSERT INTO districts (id, name_ru, name_en, slug, lat, lng) VALUES
 ('hadaba', 'Хадаба', 'Hadaba', 'hadaba', 27.863000, 34.315000),
 ('naama_bay', 'Наама Бей', 'Naama Bay', 'naama-bay', 27.915800, 34.329900),

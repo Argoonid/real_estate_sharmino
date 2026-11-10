@@ -19,6 +19,7 @@ export interface PropertyQueryOptions {
   favoriteIds?: string[];
   includeInactive?: boolean;
   exchangeRates?: ExchangeRates;
+  adminSelectedOnly?: boolean;
 }
 
 export interface PropertyPage {
@@ -95,6 +96,8 @@ function toProperty(row: PropertyRow, districtsById: Map<string, District>): Dat
     deal: row.deal,
     type: row.type,
     is_active: row.is_active,
+    is_admin_selected: row.is_admin_selected,
+    admin_notes: row.admin_notes ?? '',
     price: {
       amount: Number(row.price_amount),
       currency,
@@ -138,10 +141,6 @@ function toProperty(row: PropertyRow, districtsById: Map<string, District>): Dat
   };
 }
 
-function escapePostgrestPattern(value: string): string {
-  return `*${value.replace(/[\\"]/g, '\\$&').replace(/[(),]/g, ' ')}*`;
-}
-
 export class SupabaseService {
   public static isConfigured = isSupabaseConfigured;
 
@@ -174,7 +173,8 @@ export class SupabaseService {
 
   private static async fetchDistrictCenters(
     db: SupabaseClient<Database>,
-  ): Promise<Map<string, { lat: number; lng: number }>> {
+  ) {
+
     const sums = new Map<string, { lat: number; lng: number; count: number }>();
     const pageSize = 1000;
     let from = 0;
@@ -240,6 +240,8 @@ export class SupabaseService {
       .select('*', { count: 'exact' });
 
     if (!options.includeInactive) query = query.eq('is_active', true);
+    if (options.adminSelectedOnly) query = query.eq('is_admin_selected', true);
+    
     if (filter.deal !== 'all') query = query.eq('deal', filter.deal);
     if (filter.districtId !== 'all') query = query.eq('district_id', filter.districtId);
     if (filter.propertyType !== 'all') query = query.eq('type', filter.propertyType);
@@ -285,8 +287,6 @@ export class SupabaseService {
     const rawSearch = filter.searchQuery.trim();
     if (rawSearch) {
       const smart = parseSmartSearch(rawSearch);
-
-      // 1. Поиск по номеру или ID
       if (smart.idCode) {
         const idPattern = `%${smart.idCode}%`;
         const idConditions = [
@@ -297,15 +297,12 @@ export class SupabaseService {
         ];
         query = query.or(idConditions.join(','));
       }
-
-      // 2. Распознанные параметры (район, тип жилья, число комнат, сделка)
       if (smart.districts.length > 0 && filter.districtId === 'all') {
         const districtList = smart.districts.join(',');
         const distPatterns = smart.districts.map((d) => `title.ilike.%${d}%`).join(',');
         query = query.or(`district_id.in.(${districtList}),${distPatterns}`);
       }
       if (smart.propertyTypes.length > 0 && filter.propertyType === 'all') {
-        const typeList = smart.propertyTypes.join(',');
         query = query.in('type', smart.propertyTypes);
       }
       if (smart.dealTypes.length > 0 && filter.deal === 'all') {
@@ -326,8 +323,6 @@ export class SupabaseService {
       if (smart.features.includes('furnished') && !filter.furnishedOnly) {
         query = query.eq('is_furnished', true);
       }
-
-      // 3. Текстовые ключевые слова (поиск по названию, описанию и адресу)
       if (smart.textTerms.length > 0) {
         for (const term of smart.textTerms) {
           const clean = term.replace(/[(),"\\]/g, '').trim();
@@ -349,15 +344,13 @@ export class SupabaseService {
         : filter.sortBy === 'area_desc'
           ? { column: 'area_sqm' as const, ascending: false }
           : { column: 'created_at' as const, ascending: false };
+    
     query = query
       .order(orderBy.column, { ascending: orderBy.ascending })
       .order('id', { ascending: true })
       .range(from, to);
 
-    const [{ data, error, count }, districts] = await Promise.all([
-      query,
-      districtsPromise,
-    ]);
+    const [{ data, error, count }, districts] = await Promise.all([query, districtsPromise]);
     if (error) throw error;
 
     const districtsById = new Map(districts.map((district) => [district.id, district]));
@@ -372,7 +365,7 @@ export class SupabaseService {
 
   public static async fetchAllProperties(
     filter: FilterState,
-    options: Pick<PropertyQueryOptions, 'favoriteIds' | 'exchangeRates' | 'includeInactive'> = {},
+    options: Pick<PropertyQueryOptions, 'favoriteIds' | 'exchangeRates' | 'includeInactive' | 'adminSelectedOnly'> = {},
   ): Promise<DatabaseProperty[]> {
     if (options.favoriteIds?.length === 0) return [];
 
@@ -390,6 +383,7 @@ export class SupabaseService {
           favoriteIds: options.favoriteIds,
           exchangeRates: options.exchangeRates,
           includeInactive: options.includeInactive,
+          adminSelectedOnly: options.adminSelectedOnly,
         },
         districtsPromise,
       );
